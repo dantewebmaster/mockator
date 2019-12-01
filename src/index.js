@@ -4,8 +4,9 @@ const morgan = require('morgan');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const fs = require('fs');
-
 const jsonReader = require('./jsonReader');
+
+const port = 9999;
 
 const app = express();
 
@@ -14,41 +15,46 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cors());
 
-app.get('/users', (req, res) => {
-  jsonReader(`./data/${req.route.path}.json`, (err, data) => {
-    if (err) {
-      return res.status(500).json(err);
-    }
-    return res.json({ data });
+fs.readdir('./data', (err, files) => {
+  files.forEach(file => {
+
+    const [endpoint] = file.split('.');
+
+    // Create get endpoints
+    app.get(`/${endpoint}`, (req, res) => {
+      jsonReader(`./data/${file}`, (err, data) => {
+        if (err) {
+          return res.status(500).json(err);
+        }
+        return res.json({ data });
+      });
+    });
+
+    // Create post endpoints
+    app.post(`/${endpoint}`, (req, res) => {
+      const body = req.body;
+      
+      if (Object.keys(body).length === 0) {
+        return res.status(400).end();
+      }
+    
+      jsonReader(`./data/${file}`, (err, data) => {
+        const currentData = data || [];
+        body.id = '_' + Math.random().toString().substr(2, 9);
+        currentData.push(body);
+        
+        fs.writeFile(`./data/${file}`, JSON.stringify(currentData, null, 2), (err) => {
+          if (err) {
+            console.log('Error writing file', err);
+          } else {
+            console.log('Successfully wrote file');
+          }
+        });
+      });
+    
+      return res.json({ body });
+    });
   });
 });
 
-app.get('/customers', (req, res) => {
-  jsonReader(`./data/${req.route.path}.json`, (err, data) => {
-    if (err) {
-      return res.status(500).json(err);
-    }
-    return res.json({ data });
-  });
-});
-
-app.post('/customers', (req, res) => {
-  const customer = req.body;
-
-  if (!customer) {
-    return res.status(400).end();
-  }
-
-  fs.writeFile(`./data/${req.route.path}.json`, JSON.stringify(customer), (err) => {
-    if (err) {
-      console.log('Error writing file', err)
-    } else {
-      console.log('Successfully wrote file')
-    }
-  })
-
-  return res.json({ customer });
-});
-
-// o servidor irá rodar dentro da porta 9000
-app.listen(9999, () => console.log('Express started at http://localhost:9999'));
+app.listen(port, () => console.log(`Mock started at http://localhost:${port}`));
