@@ -30,6 +30,20 @@ fs.readdir('./data', (err, files) => {
       });
     });
 
+    // Create get by id endpoints
+    app.get(`/${endpoint}/:id`, (req, res) => {
+      jsonReader(`./data/${file}`, (err, data) => {
+        if (err) {
+          return res.status(500).json(err);
+        }
+
+        const id = req.params.id;
+        const response = data.find(item => item.id === id);
+
+        return res.json({ response });
+      });
+    });
+
     // Create post endpoints
     app.post(`/${endpoint}`, (req, res) => {
       const body = req.body;
@@ -40,8 +54,12 @@ fs.readdir('./data', (err, files) => {
     
       jsonReader(`./data/${file}`, (err, data) => {
         const currentData = data || [];
-        body.id = '_' + Math.random().toString().substr(2, 9);
-        currentData.push(body);
+        
+        const newItem = {
+          ...body, id: '_' + Math.random().toString().substr(2, 9)
+        };
+        
+        currentData.push(newItem);
         
         fs.writeFile(`./data/${file}`, JSON.stringify(currentData, null, 2), (err) => {
           if (err) {
@@ -50,9 +68,9 @@ fs.readdir('./data', (err, files) => {
             console.log('Successfully wrote file');
           }
         });
+
+        return res.json({ newItem });
       });
-    
-      return res.json({ body });
     });
   });
 });
