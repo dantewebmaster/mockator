@@ -23,9 +23,14 @@ fs.readdir('./data', (err, files) => {
     // Create get endpoints
     app.get(`/${endpoint}`, (req, res) => {
       jsonReader(`./data/${file}`, (err, data) => {
+        if (!data) {
+          return res.json({});
+        }
+
         if (err) {
           return res.status(500).json(err);
         }
+
         return res.json({ data });
       });
     });
@@ -33,6 +38,10 @@ fs.readdir('./data', (err, files) => {
     // Create get by id endpoints
     app.get(`/${endpoint}/:id`, (req, res) => {
       jsonReader(`./data/${file}`, (err, data) => {
+        if (!data) {
+          return res.json({});
+        }
+        
         if (err) {
           return res.status(500).json(err);
         }
